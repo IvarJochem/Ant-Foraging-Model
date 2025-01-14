@@ -26,6 +26,14 @@ def generate_maze(rows, cols):
     carve_passages_from(start_x, start_y, maze, rows, cols)
     return maze
 
+def upscale_maze(maze, scale):
+    rows, cols = maze.shape
+    upscaled_maze = np.zeros((rows * scale, cols * scale))
+    for i in range(rows):
+        for j in range(cols):
+            upscaled_maze[i * scale:(i + 1) * scale, j * scale:(j + 1) * scale] = maze[i][j]
+    return upscaled_maze
+
 def print_maze(maze):
     for row in maze:
         print(" ".join(str(cell) for cell in row))
@@ -33,4 +41,5 @@ def print_maze(maze):
 if __name__ == "__main__":
     rows, cols = 11, 11  # Dimensions of the maze (must be odd numbers)
     maze = generate_maze(rows, cols)
+    maze = upscale_maze(maze, 2)
     print_maze(maze)
