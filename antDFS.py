@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mazegenrator import generate_maze
+from mazegenerator import generate_maze
 
-Maze = generate_maze(31, 31)
+Maze = generate_maze(51, 51)
 
 class Model:
-    def __init__(self, width=len(Maze[0]), height=len(Maze), nAnts=10):
+    def __init__(self, width=len(Maze[0]), height=len(Maze), nAnts=100):
         """
         Initialize the model with width, height, and number of ants.
         """
@@ -13,7 +13,7 @@ class Model:
         self.height = height
         self.nAnts = nAnts
 
-        # Our grid is a maze with walls (3) and open spaces (0)
+        # Our grid is a maze with walls (2) and open spaces (0)
         self.grid = Maze
 
         # We initialize colony in the center and the food at the top
@@ -22,11 +22,10 @@ class Model:
 
         # Colony is represented as a -1 and food as a 1
         self.grid[self.colony_position] = -1
-        self.grid[self.food_position] = 2
+        self.grid[self.food_position] = 1
 
         # Initialize ants at the colony
         self.ants = [Ant(self.colony_position[0], self.colony_position[1]) for _ in range(nAnts)]
-
 
 
     def update(self):
@@ -52,7 +51,8 @@ class Ant:
         self.grid = Maze
         self.visited = []
         self.visited.append(self.position)
-        self.backtrackcount = 0
+        self.path = []
+        self.path.append(self.position)
         self.time_since_last_update = 0.0
 
     def get_adjacent_cells(self):
@@ -70,19 +70,21 @@ class Ant:
             # check adjacent cells for cells that the ant has not visited
             # and move to the cell that has not been visited
             adj_cells = self.get_adjacent_cells()
+            # shuffle the adjacent cells to randomize the movement
+            np.random.shuffle(adj_cells)
             for cell in adj_cells:
-                if self.grid[int(cell[0]), int(cell[1])] != 1 and cell not in self.visited:
+                if self.grid[int(cell[0]), int(cell[1])] != 2 and cell not in self.visited:
                     self.position = cell
-                    # change the cell to 0.5 to indicate that the ant has visited the cell
+                    # change the cell to -3 to visualize that the ant has visited the cell
                     Maze[int(cell[0]), int(cell[1])] = -3
                     self.visited.append(self.position)
-                    self.backtrackcount = 0
+                    self.path.append(self.position)
                     self.time_since_last_update = 0.0
                     return
             
             # if all adjacent cells have been visited, move back to the previous cell
-            self.position = self.visited[-self.backtrackcount]
-            self.backtrackcount += 1
+            self.position = self.path[-2]
+            self.path.pop()
             # print(f"Backtracking to {self.position}")
             self.time_since_last_update = 0.0
             return
