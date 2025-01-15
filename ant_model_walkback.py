@@ -4,7 +4,7 @@ from maze_generator_with_nPaths import generate_maze_with_paths
 from mazegenerator import upscale_maze
 
 class Model:
-    def __init__(self, Maze, width, height, nAnts=1):
+    def __init__(self, Maze, width, height, nAnts=1000):
         """
         Initialize the model with width, height, and number of ants.
         """
@@ -35,7 +35,9 @@ class Model:
     def update(self):
         """
         Update the positions of all ants and stop if food is found.
-        """ 
+        """
+        # Pheromone decay of 1%
+        self.pheromones *= 0.99
         for ant in self.ants:
             ant.step(0.1)  # Update position and direction
             # Check if an ant has found the food
@@ -47,6 +49,8 @@ class Model:
                 ant.path = []
                 ant.path.append(ant.position)
                 ant.time_since_last_update = 0.0
+        # Pheromone decay of 10%
+        self.pheromones *= 0.90
 
 
 
@@ -150,11 +154,11 @@ class Visualization:
             "yellow", #-1 colony
             "white", # 0 open spaces
             "green", # 1 food
-            "black", # 2 walls 
+            "black", # 2 walls
 
         ]
         custom_cmap = ListedColormap(colors)
-        
+
         self.im = plt.imshow(grid, vmin=-3, vmax=3, cmap=custom_cmap)
 
         self.ph_im = None
@@ -168,7 +172,7 @@ class Visualization:
 
         # Visualize the pheromones
         if self.ph_im is None:
-            self.ph_im = plt.imshow(self.pheromones, alpha=0.5, cmap='Purples', vmin=0, vmax=0.9)
+            self.ph_im = plt.imshow(self.pheromones, alpha=0.5, cmap='hot', vmin=0, vmax=0.9)
         else:
             self.ph_im.set_data(self.pheromones)
         # # Visualize the colony with a 3x3 radius in yellow (-1)
@@ -210,7 +214,7 @@ if __name__ == '__main__':
     timeSteps = 1000
     t = 0
     Maze = generate_maze_with_paths(21, 21, 5)
-    # Maze = upscale_maze(Maze, 3)
+    Maze = upscale_maze(Maze, 3)
     sim = Model(Maze, len(Maze[0]), len(Maze))
     vis = Visualization(Maze, sim.pheromones, sim.height, sim.width)
     print('Starting simulation')
