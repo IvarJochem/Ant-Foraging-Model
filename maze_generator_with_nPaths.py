@@ -3,7 +3,7 @@ import numpy as np
 
 # Initialize the maze with all walls
 def initialize_maze(rows, cols):
-    maze = np.ones((rows, cols), dtype=int)
+    maze = np.array([[2] * cols for _ in range(rows)])
     return maze
 
 # Recursive function to carve passages in the maze
@@ -15,7 +15,7 @@ def carve_passages_from(cx, cy, maze, rows, cols, path_count, current_paths):
     for direction in directions:
         nx, ny = cx + direction[0] * 2, cy + direction[1] * 2
         # Check if the new cell is within bounds and not visited
-        if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] == 1:
+        if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] == 2:
             maze[cx + direction[0]][cy + direction[1]] = 0
             maze[nx][ny] = 0
             # Recursively carve passages from the new cell
