@@ -4,9 +4,12 @@ import matplotlib.pyplot as plt
 from maze_generator_with_nPaths import generate_maze_with_paths
 from mazegenerator import upscale_maze
 
+
+
+
 #test
 class Model:
-    def __init__(self, Maze, width, height, nAnts=1000):
+    def __init__(self, Maze, width, height, nAnts=100):
         """
         Initialize the model with width, height, and number of ants.
         """
@@ -18,8 +21,8 @@ class Model:
         self.grid = Maze
 
         # We initialize colony in the center and the food at the top
-        self.colony_position = (4, 4)
-        self.food_position = (len(Maze[0])-6, len(Maze)-6)
+        self.colony_position = (12, 12)
+        self.food_position = (len(Maze[0])-13, len(Maze)-13)
 
         # Colony is represented as a -1 and food as a 1
         self.grid[self.colony_position] = -1
@@ -31,6 +34,12 @@ class Model:
 
         # Track the food deliverd
         self.food_found = 0
+
+        #Number of paths change this to 120, 55, 32, or 16
+        nPaths = 16
+
+        #Number of time steps in the simulation 
+        ntimeSteps = 1000
 
 
 
@@ -51,8 +60,7 @@ class Model:
                 ant.path = []
                 ant.path.append(ant.position)
                 ant.time_since_last_update = 0.0
-        # Pheromone decay of 10%
-        self.pheromones *= 0.90
+       
 
 
 
@@ -86,12 +94,39 @@ class Ant:
         Shuffle the adjacent cells with a bias to move away from the colony.
         Bias is the probability of moving away from the colony.
         """
+        # remove cells that are walls
+        adj_cells = [cell for cell in adj_cells if self.grid[int(cell[0]), int(cell[1])] != 2]
+        # remove cells that are visited
+        adj_cells = [cell for cell in adj_cells if cell not in self.visited]
+        
+        total_chance = 0
+        for cell in adj_cells:
+            total_chance += self.pheromones[int(cell[0]), int(cell[1])] + 0.1
+
+        if total_chance == len(adj_cells)*0.1:
+            #nothing happens, no pheromones
+            np.random.shuffle(adj_cells)
+            if len(adj_cells) == 0:
+                return False
+            else:
+                return adj_cells[0]
+        # pick a random number between 0 and the total pheromones
+        pheromone_pick  = np.random.uniform(0, total_chance)
+        current_chance = 0
+        for cell in adj_cells:
+            current_chance += self.pheromones[int(cell[0]), int(cell[1])] + 1
+            if current_chance >= pheromone_pick:
+                return cell
+
+        
+        """
         if np.random.rand() > bias:
             np.random.shuffle(adj_cells)
         else:
             distances = [np.linalg.norm(np.array(cell) - np.array(self.colony_position)) for cell in adj_cells]
             adj_cells = [cell for _, cell in sorted(zip(distances, adj_cells))]
             adj_cells.reverse()
+        """
         return adj_cells
 
     def step(self, dt):
@@ -122,14 +157,13 @@ class Ant:
                 # and move to the cell that has not been visited
                 adj_cells = self.get_adjacent_cells()
                 # shuffle the adjacent cells to randomize the movement
-                adj_cells = self.shuffle_cells_with_bias(adj_cells)
-                for cell in adj_cells:
-                    if self.grid[int(cell[0]), int(cell[1])] != 2 and cell not in self.visited:
-                        self.position = cell
-                        self.visited.append(self.position)
-                        self.path.append(self.position)
-                        self.time_since_last_update = 0.0
-                        return
+                cell = self.shuffle_cells_with_bias(adj_cells)
+                if cell != False:
+                    self.position = cell
+                    self.visited.append(self.position)
+                    self.path.append(self.position)
+                    self.time_since_last_update = 0.0
+                    return
           #  elif self.grid[int(self.position[0]), int(self.position[1])] >= 0 and self.grid[int(self.position[0]), int(self.position[1])] < 1:
         #        # Randomly emit pheromones for now
            #     self.grid[int(self.position[0]), int(self.position[1])] = np.random.uniform()
@@ -215,14 +249,14 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
-    timeSteps = 1000
+    timeSteps = ntimeSteps
     t = 0
-    Maze = generate_maze_with_paths(21, 21, 5)
-    Maze = upscale_maze(Maze, 3)
+    Maze = generate_maze_with_paths(3, 3, nPaths)
+    Maze = upscale_maze(Maze, 12)
     sim = Model(Maze, len(Maze[0]), len(Maze))
     vis = Visualization(Maze, sim.pheromones, sim.height, sim.width)
     print('Starting simulation')
-    n = 10
+    n = 10000000000
     while t < timeSteps and not sim.food_found > n-1:
         food_found = sim.update()  # Update simulation
         ant_positions = [ant.position for ant in sim.ants]

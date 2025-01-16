@@ -36,6 +36,13 @@ class Model:
             # Check if an ant has found the food
             if (int(ant.position[0]), int(ant.position[1])) == self.food_position:
                 food_found = True
+        # multiply the pheromones by 0.99 to decay the pheromones
+        # where the grid value is between 0 and 1
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.grid[i, j] >= 0 and self.grid[i, j] < 1:
+                    self.grid[i, j] *= 0.99
+
         return food_found
 
 
@@ -68,6 +75,16 @@ class Ant:
         Shuffle the adjacent cells with a bias to move away from the colony.
         Bias is the probability of moving away from the colony.
         """
+        # remove cells that are walls
+        adj_cells = [cell for cell in adj_cells if self.grid[int(cell[0]), int(cell[1])] != 2]
+        # sort the adjacent cells based on the pheromone levels
+        pheromone_levels = [self.grid[int(cell[0]), int(cell[1])] for cell in adj_cells]
+        adj_cells = [cell for _, cell in sorted(zip(pheromone_levels, adj_cells))]
+        # pick cell with odds based on the pheromone levels
+        for i in range(len(pheromone_levels)):
+            if np.random.rand() < pheromone_levels[i]:
+                return adj_cells[i]
+        
         if np.random.rand() > bias:
             np.random.shuffle(adj_cells)
         else:
@@ -107,9 +124,9 @@ class Ant:
                         self.path.append(self.position)
                         self.time_since_last_update = 0.0
                         return
-            elif self.grid[int(self.position[0]), int(self.position[1])] >= 0 and self.grid[int(self.position[0]), int(self.position[1])] < 1:
+            elif self.grid[int(self.position[0]), int(self.position[1])] >= 0 and self.grid[int(self.position[0]), int(self.position[1])] < 0.9:
                 # set the current cell as 3 to visualize that the ant has food
-                self.grid[int(self.position[0]), int(self.position[1])] = 3
+                self.grid[int(self.position[0]), int(self.position[1])] += 0.1
             # move back to the colony along the path
             self.position = self.path[-2]
             self.path.pop()
