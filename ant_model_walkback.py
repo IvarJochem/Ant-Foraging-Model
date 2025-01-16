@@ -4,10 +4,28 @@ import matplotlib.pyplot as plt
 from maze_generator_with_nPaths import generate_maze_with_paths
 from mazegenerator import upscale_maze
 
+#Number of paths change this to 120, 55, 32, or 16
+nPaths = 16
+
+#Number of time steps in the simulation 
+ntimeSteps = 1000
+
+#Maze dimention, must be odd number 
+maze_dimention = 13
+
+#Number of ants that have to return with food 
+ants_with_food_returned = 50
+
+#Amount of pheromone deposited per timestep per ant
+pheromone_deposit = 0.1
+
+#Decay rate of pheromones
+decay_rate = 0.01
+
+#Maximum amount of pheromones per cell
+max_pheromone = 0.9
 
 
-
-#test
 class Model:
     def __init__(self, Maze, width, height, nAnts=100):
         """
@@ -35,11 +53,6 @@ class Model:
         # Track the food deliverd
         self.food_found = 0
 
-        #Number of paths change this to 120, 55, 32, or 16
-        nPaths = 16
-
-        #Number of time steps in the simulation 
-        ntimeSteps = 1000
 
 
 
@@ -47,8 +60,7 @@ class Model:
         """
         Update the positions of all ants and stop if food is found.
         """
-        # Pheromone decay of 1%
-        self.pheromones *= 0.99
+        self.pheromones *= decay_rate
         for ant in self.ants:
             ant.step(0.1)  # Update position and direction
             # Check if an ant has found the food
@@ -89,10 +101,9 @@ class Ant:
         adj_cells = [(x, y + 1), (x + 1, y), (x, y - 1), (x - 1, y)]
         return adj_cells
 
-    def shuffle_cells_with_bias(self, adj_cells, bias=0):
+    def choose_cells_based_on_pheromones(self, adj_cells):
         """
-        Shuffle the adjacent cells with a bias to move away from the colony.
-        Bias is the probability of moving away from the colony.
+        Choose one of adjecent cells based on pheromone level
         """
         # remove cells that are walls
         adj_cells = [cell for cell in adj_cells if self.grid[int(cell[0]), int(cell[1])] != 2]
@@ -119,14 +130,6 @@ class Ant:
                 return cell
 
         
-        """
-        if np.random.rand() > bias:
-            np.random.shuffle(adj_cells)
-        else:
-            distances = [np.linalg.norm(np.array(cell) - np.array(self.colony_position)) for cell in adj_cells]
-            adj_cells = [cell for _, cell in sorted(zip(distances, adj_cells))]
-            adj_cells.reverse()
-        """
         return adj_cells
 
     def step(self, dt):
@@ -140,7 +143,7 @@ class Ant:
             if self.hasfood:
                 x, y = int(self.position[0]), int(self.position[1])
                 if self.grid[x, y] >= 0 and self.grid[x, y] < 1:
-                    self.pheromones[x, y] = min(self.pheromones[x, y] + 0.1, 0.9)
+                    self.pheromones[x, y] = min(self.pheromones[x, y] +  pheromone_deposit , max_pheromone)
             # check if the ant is at the colony and has food
             
             if self.hasfood and self.position == self.colony_position:
@@ -157,7 +160,7 @@ class Ant:
                 # and move to the cell that has not been visited
                 adj_cells = self.get_adjacent_cells()
                 # shuffle the adjacent cells to randomize the movement
-                cell = self.shuffle_cells_with_bias(adj_cells)
+                cell = self.choose_cells_based_on_pheromones(adj_cells)
                 if cell != False:
                     self.position = cell
                     self.visited.append(self.position)
@@ -210,7 +213,7 @@ class Visualization:
 
         # Visualize the pheromones
         if self.ph_im is None:
-            self.ph_im = plt.imshow(self.pheromones, alpha=0.5, cmap='hot', vmin=0, vmax=0.9)
+            self.ph_im = plt.imshow(self.pheromones, alpha=0.5, cmap='hot', vmin=0, vmax=max_pheromone)
         else:
             self.ph_im.set_data(self.pheromones)
         # # Visualize the colony with a 3x3 radius in yellow (-1)
@@ -251,13 +254,12 @@ if __name__ == '__main__':
     """
     timeSteps = ntimeSteps
     t = 0
-    Maze = generate_maze_with_paths(3, 3, nPaths)
-    Maze = upscale_maze(Maze, 12)
+    Maze = generate_maze_with_paths(maze_dimention, maze_dimention, nPaths)
+    Maze = upscale_maze(Maze, 3)
     sim = Model(Maze, len(Maze[0]), len(Maze))
     vis = Visualization(Maze, sim.pheromones, sim.height, sim.width)
     print('Starting simulation')
-    n = 10000000000
-    while t < timeSteps and not sim.food_found > n-1:
+    while t < timeSteps and not sim.food_found > ants_with_food_returned -1:
         food_found = sim.update()  # Update simulation
         ant_positions = [ant.position for ant in sim.ants]
         ant_with_food_positions = [ant.position for ant in sim.ants if ant.hasfood]
