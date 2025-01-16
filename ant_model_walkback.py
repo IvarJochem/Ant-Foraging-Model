@@ -101,11 +101,13 @@ class Ant:
             # check if the ant has food
             if self.grid[int(self.position[0]), int(self.position[1])] == 1:
                 self.hasfood = True
+
             if self.hasfood:
                 x, y = int(self.position[0]), int(self.position[1])
                 if self.grid[x, y] >= 0 and self.grid[x, y] < 1:
                     self.pheromones[x, y] = min(self.pheromones[x, y] + 0.1, 0.9)
             # check if the ant is at the colony and has food
+            
             if self.hasfood and self.position == self.colony_position:
                 self.hasfood = False
                 self.visited = []
