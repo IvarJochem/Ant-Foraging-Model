@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from maze_generator_with_nPaths import generate_maze_with_paths
 from mazegenerator import upscale_maze
 
+#test
 class Model:
     def __init__(self, Maze, width, height, nAnts=1000):
         """
