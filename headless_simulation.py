@@ -5,28 +5,29 @@ from mazegenerator import upscale_maze
 
 #test
 class Model:
-    def __init__(self, Maze, width, height, nAnts=1000):
+    def __init__(self, Maze, width, height, nAnts=1000, decay_rate = 0.95, pheromone_deposit=0.1, max_pheromone=0.9):
         """
         Initialize the model with width, height, and number of ants.
         """
         self.width = width
         self.height = height
         self.nAnts = nAnts
-
+        self.decay = decay_rate
         # Our grid is a maze with walls (2) and open spaces (0)
         self.grid = Maze
 
         # We initialize colony in the center and the food at the top
         self.colony_position = (4, 4)
         self.food_position = (len(Maze[0])-6, len(Maze)-6)
-
+        self.pheromone_deposit = pheromone_deposit
+        self.max_pheromone = max_pheromone
         # Colony is represented as a -1 and food as a 1
         self.grid[self.colony_position] = -1
         self.grid[self.food_position] = 1
         #Initialize pheromone grid
         self.pheromones = np.zeros_like(Maze, dtype = float)
         # Initialize ants at the colony
-        self.ants = [Ant(Maze, self.pheromones, self.colony_position[0], self.colony_position[1]) for _ in range(nAnts)]
+        self.ants = [Ant(Maze, self.pheromones, self.colony_position[0], self.colony_position[1], pheromone_deposit, max_pheromone) for _ in range(nAnts)]
 
         # Track the food deliverd
         self.food_found = 0
@@ -37,8 +38,8 @@ class Model:
         """
         Update the positions of all ants and stop if food is found.
         """
-        # Pheromone decay of 1%
-        self.pheromones *= 0.99
+        # Pheromone decay
+        self.pheromones *= self.decay
         for ant in self.ants:
             ant.step(0.1)  # Update position and direction
             # Check if an ant has found the food
@@ -50,13 +51,12 @@ class Model:
                 ant.path = []
                 ant.path.append(ant.position)
                 ant.time_since_last_update = 0.0
-        # Pheromone decay of 10%
-        self.pheromones *= 0.90
+
 
 
 
 class Ant:
-    def __init__(self, Maze, pheromones, x, y):
+    def __init__(self, Maze, pheromones, x, y, pheromone_deposit, max_pheromone):
         """
         Class to model the ants. Each ant is initialized with a position and direction.
         """
@@ -71,7 +71,8 @@ class Ant:
         self.time_since_last_update = 0.0
         self.hasfood = False
         self.pheromones = pheromones
-
+        self.pheromone_deposit = pheromone_deposit
+        self.max_pheromone = max_pheromone
     def get_adjacent_cells(self):
         """
         Get the adjacent cells of the ant in the grid.
@@ -80,17 +81,35 @@ class Ant:
         adj_cells = [(x, y + 1), (x + 1, y), (x, y - 1), (x - 1, y)]
         return adj_cells
 
-    def shuffle_cells_with_bias(self, adj_cells, bias=0):
+    def choose_cells_based_on_pheromones(self, adj_cells):
         """
-        Shuffle the adjacent cells with a bias to move away from the colony.
-        Bias is the probability of moving away from the colony.
+        Choose one of adjecent cells based on pheromone level
         """
-        if np.random.rand() > bias:
+        # remove cells that are walls
+        adj_cells = [cell for cell in adj_cells if self.grid[int(cell[0]), int(cell[1])] != 2]
+        # remove cells that are visited
+        adj_cells = [cell for cell in adj_cells if cell not in self.visited]
+        
+        total_chance = 0
+        for cell in adj_cells:
+            total_chance += self.pheromones[int(cell[0]), int(cell[1])] + 0.1
+
+        if total_chance == len(adj_cells)*0.1:
+            #nothing happens, no pheromones
             np.random.shuffle(adj_cells)
-        else:
-            distances = [np.linalg.norm(np.array(cell) - np.array(self.colony_position)) for cell in adj_cells]
-            adj_cells = [cell for _, cell in sorted(zip(distances, adj_cells))]
-            adj_cells.reverse()
+            if len(adj_cells) == 0:
+                return False
+            else:
+                return adj_cells[0]
+        # pick a random number between 0 and the total pheromones
+        pheromone_pick  = np.random.uniform(0, total_chance)
+        current_chance = 0
+        for cell in adj_cells:
+            current_chance += self.pheromones[int(cell[0]), int(cell[1])] + 1
+            if current_chance >= pheromone_pick:
+                return cell
+
+        
         return adj_cells
 
     def step(self, dt):
@@ -100,11 +119,13 @@ class Ant:
             # check if the ant has food
             if self.grid[int(self.position[0]), int(self.position[1])] == 1:
                 self.hasfood = True
+
             if self.hasfood:
                 x, y = int(self.position[0]), int(self.position[1])
                 if self.grid[x, y] >= 0 and self.grid[x, y] < 1:
-                    self.pheromones[x, y] = min(self.pheromones[x, y] + 0.1, 0.9)
+                    self.pheromones[x, y] = min(self.pheromones[x, y] +  self.pheromone_deposit , self.max_pheromone)
             # check if the ant is at the colony and has food
+            
             if self.hasfood and self.position == self.colony_position:
                 self.hasfood = False
                 self.visited = []
@@ -119,15 +140,16 @@ class Ant:
                 # and move to the cell that has not been visited
                 adj_cells = self.get_adjacent_cells()
                 # shuffle the adjacent cells to randomize the movement
-                adj_cells = self.shuffle_cells_with_bias(adj_cells)
-                for cell in adj_cells:
-                    if self.grid[int(cell[0]), int(cell[1])] != 2 and cell not in self.visited:
-                        self.position = cell
-                        self.visited.append(self.position)
-                        self.path.append(self.position)
-                        self.time_since_last_update = 0.0
-                        return
-
+                cell = self.choose_cells_based_on_pheromones(adj_cells)
+                if cell != False:
+                    self.position = cell
+                    self.visited.append(self.position)
+                    self.path.append(self.position)
+                    self.time_since_last_update = 0.0
+                    return
+          #  elif self.grid[int(self.position[0]), int(self.position[1])] >= 0 and self.grid[int(self.position[0]), int(self.position[1])] < 1:
+        #        # Randomly emit pheromones for now
+           #     self.grid[int(self.position[0]), int(self.position[1])] = np.random.uniform()
             # move back to the colony along the path
             self.position = self.path[-2]
             self.path.pop()
@@ -141,7 +163,9 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
-    def run(tempFileName='simulation_results',mazeCols=21, mazeRows=21, scaleFactor=3,  mazePaths=16, initialRandomseed=16436, Ants=1000, nStop=2500, foodFind=25, iterations=5):
+    def run(tempFileName='simulation_results',mazeCols=21, mazeRows=21, scaleFactor=3,  mazePaths=16, initialRandomseed=16436,
+     Ants=1000, nStop=2500, foodFind=25, iterations=5, decay_rate = 0.9, pheromone_deposit=0.1, max_pheromone=0.9
+    ):
         import os
         folder_name = "sim_results"
         if not os.path.exists(folder_name):
@@ -154,19 +178,24 @@ if __name__ == '__main__':
         for i in range(iterations):
             timeSteps = nStop
             t = 0
-            # add i to vary the seed
-            Maze = generate_maze_with_paths(mazeCols, mazeRows, mazePaths, randomseed=initialRandomseed+i*152)
+            #Je kan de multiplicatie met randomseed weghalen als je steeds dezelfde seed wil checken.
+            #Maze = generate_maze_with_paths(mazeCols, mazeRows, mazePaths, randomseed=initialRandomseed+i*152)
+            Maze = generate_maze_with_paths(mazeCols, mazeRows, mazePaths, randomseed=initialRandomseed)
             Maze = upscale_maze(Maze, scaleFactor)
-            sim = Model(Maze, len(Maze[0]), len(Maze), nAnts=Ants)
+            sim = Model(Maze, len(Maze[0]), len(Maze), nAnts=Ants, decay_rate=0.9, pheromone_deposit=pheromone_deposit, max_pheromone=max_pheromone)
             # Heb hier schrijven we de initial settings
             filename = os.path.join(folder_name, f"{tempFileName}{i + 1}.txt")
             with open(filename, "w") as file:
                 file.write(f"Simulation Iteration {i + 1}\n")
                 file.write(f"Maze Dimensions: {mazeCols}x{mazeRows}, Scale Factor: {scaleFactor}, Paths: {mazePaths}\n")
                 file.write(f"Number of Ants: {Ants}, Maximum Time Steps: {nStop}, Food Find Target: {foodFind}\n")
-                file.write(f"Initial Random Seed: {initialRandomseed + i * 152}\n")
+                file.write(f"Initial Random Seed: {initialRandomseed}\n")
+                file.write(f"Pheromone decay rate: {decay_rate}, Deposit rate: {pheromone_deposit}, Max: {max_pheromone}")
                 # this is the file for our baseline
-                file.write("Baseline: True\n")
+                if pheromone_deposit==0:
+                    file.write("Baseline: True\n")
+                else:
+                    file.write("Baseline: False")
                 file.write("Starting simulation\n\n")
                 file.write("Timestep, Food Found, AntsFood\n")
                 print('Starting simulation')
@@ -181,21 +210,13 @@ if __name__ == '__main__':
 
                     t += 1
 
-    # Je kan in run aangeven wat je wilt aanpassen t.o.v. van de baseline. Is normaal de bedoeling dat je 1 parameter tegelijk aanpast
-    # maar nu weten we nog niet precies wat we allemaal willen.
-    # Dit was gemaakt in een versie waar pheromonen nog niet werkte. Ik kan later nog wel kijken naar een optie
-    # om pheromonen uit en aan te zetten, en dan de simulatie te runnen in dezelfde maze met en zonder pheromonen.
-    # Voor nu is dit denk het wel genoeg om alvast aan wat visualisaties te werken van hoe snel een mier nou precies x aantal eten vindt.
-    # Dan kunnen we later die code hergebruiken om te zien wat het verschil is als pheromonen wel een rol spelen.
+
+    # Je kan de run functie gebruiken. Als je een parameter wil veranderen kan je of bovenin de functie de standaardwaardes veranderen,
+    # of aangeven wat je wilt veranderen t.o.v. deze standaardwaardes zoals hieronder.
     run(scaleFactor=2, iterations=2, initialRandomseed=1)
 
-    # Als je meerdere keren dezelfde maze wilt runnen kan je iets zoals dit doen om het in meerdere txts bestand op te slaan. Die i is 
-    # ervoor dat je niet telkens dezelfde bestanden overwrite
-    # Voor het inlezen van het bestand moet je een paar rows overslaan, daarna kan je het met pandas ofzo het in zo'n dataframe zetten
-    # voor makkelijke visualisatie. Of natuurlijk iets anders, maakt niet heel veel uit.
-    """
+    # Je kan een for loop gebruiken om de naam te veranderen van de files waarin je het opslaat, hieronder een voorbeeld
+    # van hoe je de decay zou kunnen simuleren.
     for i in range(10):
         filenametosave = str(i)+'tempFileName'
-        run(tempFileName= filenametosave)
-    
-    """
+        run(tempFileName= filenametosave, decay_rate=0.1*i)

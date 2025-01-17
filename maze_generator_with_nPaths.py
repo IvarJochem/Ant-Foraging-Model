@@ -33,12 +33,12 @@ def carve_passages_from(cx, cy, maze, rows, cols, path_count, current_paths):
                     if current_paths[0] >= path_count:
                         return
 
-def generate_maze_with_paths(rows, cols, path_count):
+def generate_maze_with_paths(rows, cols, path_count, randomseed=1275832698236592):
     """Function that generates maze"""
     maze = initialize_maze(rows, cols)
     start_x, start_y = 1, 1
     maze[start_x][start_y] = 0
-    random.seed(1275832698236592)
+    random.seed(randomseed)
     # Track the number of paths created
     current_paths = [1]
     carve_passages_from(start_x, start_y, maze, rows, cols, path_count, current_paths)
