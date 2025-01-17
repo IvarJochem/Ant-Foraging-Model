@@ -44,6 +44,14 @@ def generate_maze_with_paths(rows, cols, path_count, randomseed=1275832698236592
     carve_passages_from(start_x, start_y, maze, rows, cols, path_count, current_paths)
     return maze
 
+def upscale_maze(maze, scale):
+    rows, cols = maze.shape
+    upscaled_maze = np.zeros((rows * scale, cols * scale))
+    for i in range(rows):
+        for j in range(cols):
+            upscaled_maze[i * scale:(i + 1) * scale, j * scale:(j + 1) * scale] = maze[i][j]
+    return upscaled_maze
+
 def print_maze(maze):
     for row in maze:
         print(" ".join(str(cell) for cell in row))

@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from maze_generator_with_nPaths import generate_maze_with_paths
-from mazegenerator import upscale_maze
+from maze_generator_with_nPaths import generate_maze_with_paths, upscale_maze
 
 #test
 class Model:

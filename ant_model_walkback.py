@@ -1,8 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from maze_generator_with_nPaths import generate_maze_with_paths
-from mazegenerator import upscale_maze
+from maze_generator_with_nPaths import generate_maze_with_paths, upscale_maze
 
 # Number of paths change this to 120, 55, 32, or 16
 nPaths = 16
