@@ -67,6 +67,9 @@ class Model:
         # Track the food deliverd
         self.food_found = 0
 
+        # Track if food is discovered
+        self.food_discovered = False
+
     def update(self):
         """
         Update the positions of all ants and stop if food is found.
@@ -76,10 +79,11 @@ class Model:
             ant.step(0.1)  # Update position and direction
             # Check if an ant has found the food
             if ant.hasfood and (ant.position[0], ant.position[1]) == self.colony_position:
+                self.food_discovered = True
                 self.food_found += 1  # Increment the food delivered count
                 ant.hasfood = False
                 ant.visited = {}
-                ant.visited[str(ant.position)] = 1
+                ant.visited[str(ant.position)] = True
                 ant.path = []
                 ant.path.append(ant.position)
                 ant.time_since_last_update = 0.0
@@ -95,7 +99,7 @@ class Ant:
         self.has_moved_away = False
         self.grid = maze
         self.visited = {}
-        self.visited[str(self.position)] = 1
+        self.visited[str(self.position)] = True
         self.path = []
         self.path.append(self.position)
         self.time_since_last_update = 0.0
@@ -154,7 +158,7 @@ class Ant:
             if self.position == self.colony_position:
                 self.hasfood = False
                 self.visited = {}
-                self.visited[str(self.position)] = 1
+                self.visited[str(self.position)] = True
                 self.path = []
                 self.path.append(self.position)
                 return
@@ -167,7 +171,7 @@ class Ant:
             cell = self.choose_cells_based_on_pheromones(adj_cells)
             if cell != False:
                 self.position = cell
-                self.visited[str(self.position)] = 1
+                self.visited[str(self.position)] = True
                 self.path.append(self.position)
                 self.time_since_last_update = 0.0
                 return
