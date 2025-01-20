@@ -80,8 +80,8 @@ class Model:
                 ant.hasfood = False
                 ant.visited = {}
                 ant.visited[str(ant.position)] = 1
-                ant.path = {}
-                ant.path[str(ant.position)] = 1
+                ant.path = []
+                ant.path.append(ant.position)
                 ant.time_since_last_update = 0.0
 
 
@@ -96,8 +96,8 @@ class Ant:
         self.grid = maze
         self.visited = {}
         self.visited[str(self.position)] = 1
-        self.path = {}
-        self.path[str(self.position)] = 1
+        self.path = []
+        self.path.append(self.position)
         self.time_since_last_update = 0.0
         self.hasfood = False
         self.pheromones = pheromones
@@ -155,8 +155,8 @@ class Ant:
                 self.hasfood = False
                 self.visited = {}
                 self.visited[str(self.position)] = 1
-                self.path = {}
-                self.path[str(self.position)] = 1
+                self.path = []
+                self.path.append(self.position)
                 return
             else:
                 if current_cell_value >= 0 and current_cell_value < 1:
@@ -168,14 +168,13 @@ class Ant:
             if cell != False:
                 self.position = cell
                 self.visited[str(self.position)] = 1
-                self.path[str(self.position)] = 1
+                self.path.append(self.position)
                 self.time_since_last_update = 0.0
                 return
         # move back to the colony along the path
+        self.path.pop()
         if len(self.path) > 0:
-            cell = list(self.path.keys())[-1]
-            self.position = (int(cell.split(',')[0][1:]), int(cell.split(',')[1][:-1]))
-            self.path.pop(cell)
+            self.position = self.path[-1]
         self.time_since_last_update = 0.0
         return
 
