@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
 
 #    run(scaleFactor=2, iterations=2, initialRandomseed=1)
-    run(scaleFactor=2, iterations=2, initialRandomseed=1)
+
 
     # Je kan een for loop gebruiken om de naam te veranderen van de files waarin je het opslaat, hieronder een voorbeeld
     # van hoe je de decay zou kunnen simuleren.
