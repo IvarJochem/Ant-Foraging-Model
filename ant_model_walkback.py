@@ -18,8 +18,20 @@ maze_scale = 3
 # Maze size
 maze_size = maze_dimention*maze_scale
 
+# Colony position
+colony_position = (maze_scale, maze_scale)
+
+# Food position
+food_position = (maze_size-maze_scale-1, maze_size-maze_scale-1)
+
 # Number of ants
 nAnts = 100
+
+# Number of ants per wave
+nWaveAnts = 5
+
+# Time step between waves
+WaveTimesteps = 10
 
 # Number of ants that have to return with food 
 ants_with_food_returned = 50
@@ -48,13 +60,16 @@ class Model:
         self.width = width
         self.height = height
         self.nAnts = nAnts
+        self.nWaveAnts = nWaveAnts
+        self.WaveTimesteps = WaveTimesteps
+        self.total_ants_spawned = 0
 
         # Our grid is a maze with walls (2) and open spaces (0)
         self.grid = maze
 
         # We initialize colony in the top left and the food at the bottom right
-        self.colony_position = (maze_scale, maze_scale)
-        self.food_position = (maze_size-maze_scale-1, maze_size-maze_scale-1)
+        self.colony_position = colony_position
+        self.food_position = food_position
 
         # Colony is represented as a -1 and food as a 1
         self.grid[self.colony_position] = colony
@@ -62,7 +77,7 @@ class Model:
         # Initialize pheromone grid
         self.pheromones = np.zeros_like(maze, dtype = float)
         # Initialize ants at the colony
-        self.ants = [Ant(maze, self.pheromones, self.colony_position) for _ in range(nAnts)]
+        self.ants = []
 
         # Track the food deliverd
         self.food_found = 0
@@ -70,10 +85,23 @@ class Model:
         # Track if food is discovered
         self.food_discovered = False
 
-    def update(self):
+    def spawn_ants(self):
+        """
+        Spawn a wave of ants if the maximum number of ants has not been reached.
+        """
+        if self.total_ants_spawned < self.nAnts:
+            new_ants = min(self.nWaveAnts, self.nAnts - self.total_ants_spawned)
+            for _ in range(new_ants):
+                self.ants.append(Ant(self.grid, self.pheromones, self.colony_position))
+            self.total_ants_spawned += new_ants
+
+    def update(self, timestep):
         """
         Update the positions of all ants and stop if food is found.
         """
+        if timestep % self.WaveTimesteps == 0:
+            self.spawn_ants()
+
         self.pheromones *= (1-decay_rate)
         for ant in self.ants:
             ant.step(0.1)  # Update position and direction
@@ -265,7 +293,7 @@ if __name__ == '__main__':
     vis = Visualization(maze, sim.pheromones, sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps and not sim.food_found > ants_with_food_returned -1:
-        food_found = sim.update()  # Update simulation
+        food_found = sim.update(t)  # Update simulation
         ant_without_food_positions = [ant.position for ant in sim.ants if not ant.hasfood]
         ant_with_food_positions = [ant.position for ant in sim.ants if ant.hasfood]
         vis.update(t, ant_without_food_positions, ant_with_food_positions)

@@ -13,6 +13,10 @@ if __name__ == '__main__':
     amw.maze_dimention = 21
     amw.maze_scale = 3
     amw.nAnts = 1000
+    amw.nWaveAnts = 100
+    amw.WaveTimesteps = 100
+    amw.colony_position = (amw.maze_scale, amw.maze_scale)
+    amw.food_position = (amw.maze_size-amw.maze_scale-1, amw.maze_size-amw.maze_scale-1)
     amw.ants_with_food_returned = 25
     amw.pheromone_deposit = 0.1
     amw.decay_rate = 0.9
@@ -54,7 +58,7 @@ if __name__ == '__main__':
                 print('Starting simulation')
                 n = amw.ants_with_food_returned
                 while t < timeSteps and not sim.food_found > n-1:
-                    amw.ants_with_food_returned = sim.update()  # Update simulation
+                    amw.ants_with_food_returned = sim.update(t)  # Update simulation
                     # Je kan dingen van de model writen met sim. zoals bij sim.food_found
                     # en dingen van de mieren via het callen van sim.ants, hierna kan je met ant.hasfood bijvoorbeeld
                     # een lijst maken van elk geval waneer een mier eten draagt. Laatste parameter houdt dus bij hoeveel
@@ -105,7 +109,7 @@ if __name__ == '__main__':
                     sim = Model(Maze, len(Maze[0]), len(Maze))
                     t = 0
                     while t < nStop and not sim.food_found > amw.ants_with_food_returned - 1:
-                        sim.update()  # Update simulation
+                        sim.update(t)  # Update simulation
                         file.write(f"{run + 1}, {t}, {sim.food_found}, {len([ant.hasfood for ant in sim.ants if ant.hasfood])}, {sim.food_discovered}\n")
                         t += 1
 
@@ -113,4 +117,3 @@ if __name__ == '__main__':
 
     amw.maze_scale = 2
     run(iterations=2, initialRandomseed=1, runs_per_maze=5)
-
