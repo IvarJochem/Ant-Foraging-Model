@@ -10,7 +10,7 @@ import multiprocessing as mp
 # Make sure to define the simulation parameters here or in run_process, as run_process won't have access to them otherwise
 amw.nPaths = 16
 amw.maze_dimention = 21
-amw.maze_scale = 3
+amw.maze_scale = 2
 # release ants in waves
 amw.nAnts = 1000
 amw.nWaveAnts = 100
@@ -25,7 +25,7 @@ amw.max_pheromone = 0.99
 # number of food return
 amw.ants_with_food_returned = 200
 
-def run(tempFileName='simulation_results', folder_name="sim_results", initialRandomseed=16436, nStop=2500, iterations=5):
+def run(tempFileName='simulation_results', folder_name="sim_results", initialRandomseed=16436, nStop=2500, iterations=15):
     
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
