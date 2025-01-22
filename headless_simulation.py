@@ -20,12 +20,12 @@ amw.colony_position = (amw.maze_scale, amw.maze_scale)
 amw.food_position = (amw.maze_size-amw.maze_scale-1, amw.maze_size-amw.maze_scale-1)
 amw.ants_with_food_returned = 25
 amw.pheromone_deposit = 0.1
-amw.decay_rate = 0.9
+amw.decay_rate = 0.0
 amw.max_pheromone = 0.99
 # number of food return
 amw.ants_with_food_returned = 200
 
-def run(tempFileName='simulation_results', folder_name="sim_results", initialRandomseed=16436, nStop=2500, iterations=15):
+def run(tempFileName='simulation_results', folder_name="sim_results", subfolder_name="decay_0.0", initialRandomseed=16436, nStop=2500, iterations=20):
     
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
@@ -33,9 +33,16 @@ def run(tempFileName='simulation_results', folder_name="sim_results", initialRan
     else:
         print(f"Folder '{folder_name}' already exists.")
 
+    sub_folder_path = os.path.join(folder_name, subfolder_name)
+    if not os.path.exists(sub_folder_path):
+        os.makedirs(sub_folder_path)
+        print(f"Folder '{sub_folder_path}' created.")
+    else:
+        print(f"Folder '{sub_folder_path}' already exists.")
+
     processes = []
     for i in range(iterations):
-        p = mp.Process(target=run_process, args=(tempFileName, folder_name, initialRandomseed, nStop, i))
+        p = mp.Process(target=run_process, args=(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i))
         processes.append(p)
         p.start()
 
@@ -44,7 +51,7 @@ def run(tempFileName='simulation_results', folder_name="sim_results", initialRan
 
     print("All simulations finished.")
 
-def run_process(tempFileName, folder_name, initialRandomseed, nStop, i):
+def run_process(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i):
     timeSteps = nStop
     t = 0
     #Je kan de multiplicatie met randomseed weghalen als je steeds dezelfde seed wil checken.
@@ -53,7 +60,7 @@ def run_process(tempFileName, folder_name, initialRandomseed, nStop, i):
     Maze = upscale_maze(Maze, amw.maze_scale)
     sim = Model(Maze, len(Maze[0]), len(Maze))
     # Heb hier schrijven we de initial settings
-    filename = os.path.join(folder_name, f"{tempFileName}{i + 1}.txt")
+    filename = os.path.join(folder_name, subfolder_name, f"{tempFileName}{i + 1}.txt")
     with open(filename, "w") as file:
         file.write(f"Simulation Iteration {i + 1}\n")
         file.write(f"Maze Dimensions: {amw.maze_dimention}x{amw.maze_dimention}, Scale Factor: {amw.maze_scale}, Paths: {amw.nPaths}\n")
