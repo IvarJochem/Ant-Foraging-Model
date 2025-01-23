@@ -12,20 +12,20 @@ amw.nPaths = 16
 amw.maze_dimention = 21
 amw.maze_scale = 2
 # release ants in waves
-amw.nAnts = 1000
-amw.nWaveAnts = 100
-amw.WaveTimesteps = 100
+amw.nAnts = 100
+amw.nWaveAnts = 1
+amw.WaveTimesteps = 1
 
 amw.colony_position = (amw.maze_scale, amw.maze_scale)
 amw.food_position = (amw.maze_size-amw.maze_scale-1, amw.maze_size-amw.maze_scale-1)
 amw.ants_with_food_returned = 25
-amw.pheromone_deposit = 0.1
-amw.decay_rate = 0.0
+#amw.pheromone_deposit = 0.1
+#amw.decay_rate = 0.05
 amw.max_pheromone = 0.99
 # number of food return
-amw.ants_with_food_returned = 200
+amw.ants_with_food_returned = 2000
 
-def run(tempFileName='simulation_results', folder_name="sim_results", subfolder_name="decay_0.0", initialRandomseed=16436, nStop=2500, iterations=20):
+def run(tempFileName='simulation_results', folder_name="sim_results", subfolder_name="decay_0.0", initialRandomseed=16436, nStop=2000, iterations=20, deposit=0, decay=0):
     
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
@@ -42,7 +42,7 @@ def run(tempFileName='simulation_results', folder_name="sim_results", subfolder_
 
     processes = []
     for i in range(iterations):
-        p = mp.Process(target=run_process, args=(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i))
+        p = mp.Process(target=run_process, args=(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i, deposit, decay))
         processes.append(p)
         p.start()
 
@@ -51,7 +51,7 @@ def run(tempFileName='simulation_results', folder_name="sim_results", subfolder_
 
     print("All simulations finished.")
 
-def run_process(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i):
+def run_process(tempFileName, folder_name, subfolder_name, initialRandomseed, nStop, i, deposit, decay):
     timeSteps = nStop
     t = 0
     #Je kan de multiplicatie met randomseed weghalen als je steeds dezelfde seed wil checken.
@@ -59,6 +59,10 @@ def run_process(tempFileName, folder_name, subfolder_name, initialRandomseed, nS
     Maze = generate_maze_with_paths(amw.maze_dimention, amw.maze_dimention, amw.nPaths, randomseed=initialRandomseed)
     Maze = upscale_maze(Maze, amw.maze_scale)
     sim = Model(Maze, len(Maze[0]), len(Maze))
+
+    amw.pheromone_deposit = deposit
+    amw.decay_rate = decay
+
     # Heb hier schrijven we de initial settings
     filename = os.path.join(folder_name, subfolder_name, f"{tempFileName}{i + 1}.txt")
     with open(filename, "w") as file:
@@ -90,5 +94,7 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
-
-    run()
+    for i in range(10):
+        deposit_rate = i/10
+      #  run(subfolder_name='deposit'+str(deposit_rate)+'0.05', deposit=deposit_rate, decay=0.05)
+        run(subfolder_name='deposit'+str(deposit_rate), deposit=deposit_rate, decay=0.05)
