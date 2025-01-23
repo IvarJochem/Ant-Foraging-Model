@@ -36,11 +36,14 @@ WaveTimesteps = 10
 # Number of ants that have to return with food 
 ants_with_food_returned = 50
 
-# Amount of pheromone deposited per timestep per ant
+# Maximum amount of pheromone deposited per timestep per ant
 pheromone_deposit = 0.1
 
+#Strength of decay 
+decay_strength = 1 
+
 # Base chance of choosing a cell
-base_chance = 0.1
+base_chance = 0.7
 
 # Decay rate of pheromones
 decay_rate = 0.01
@@ -197,7 +200,7 @@ class Ant:
             elif current_cell_value == food:
                 self.final_path_length = len(self.path)
             elif current_cell_value >= 0 and current_cell_value < 1:
-                current_pheromone_deposit = pheromone_deposit*(self.final_path_length/len(self.path))
+                current_pheromone_deposit = pheromone_deposit*(((len(self.path)/self.final_path_length) / decay_strength)**2)
                 self.pheromones[x, y] = min(self.pheromones[x, y] +  current_pheromone_deposit , max_pheromone)
         else:
             adj_cells = self.get_adjacent_cells()
