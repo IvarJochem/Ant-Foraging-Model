@@ -39,6 +39,9 @@ ants_with_food_returned = 50
 # Amount of pheromone deposited per timestep per ant
 pheromone_deposit = 0.1
 
+# Base chance of choosing a cell
+base_chance = 0.1
+
 # Decay rate of pheromones
 decay_rate = 0.01
 
@@ -130,6 +133,7 @@ class Ant:
         self.visited[str(self.position)] = True
         self.path = []
         self.path.append(self.position)
+        self.final_path_length = 0
         self.time_since_last_update = 0.0
         self.hasfood = False
         self.pheromones = pheromones
@@ -156,9 +160,9 @@ class Ant:
 
         total_chance = 0
         for cell in adj_cells:
-            total_chance += self.pheromones[cell[0], cell[1]] + 0.1
+            total_chance += self.pheromones[cell[0], cell[1]] + base_chance
 
-        if total_chance == len(adj_cells)*0.1:
+        if total_chance == len(adj_cells)*base_chance:
             # nothing happens, no pheromones
             np.random.shuffle(adj_cells)
             return adj_cells[0]
@@ -167,7 +171,7 @@ class Ant:
         current_chance = 0
         # pick the cell based on pheromone_pick
         for cell in adj_cells:
-            current_chance += self.pheromones[cell[0], cell[1]] + 0.1
+            current_chance += self.pheromones[cell[0], cell[1]] + base_chance
             if current_chance >= pheromone_pick:
                 return cell
 
@@ -190,9 +194,11 @@ class Ant:
                 self.path = []
                 self.path.append(self.position)
                 return
-            else:
-                if current_cell_value >= 0 and current_cell_value < 1:
-                    self.pheromones[x, y] = min(self.pheromones[x, y] +  pheromone_deposit , max_pheromone)
+            elif current_cell_value == food:
+                self.final_path_length = len(self.path)
+            elif current_cell_value >= 0 and current_cell_value < 1:
+                current_pheromone_deposit = pheromone_deposit*(self.final_path_length/len(self.path))
+                self.pheromones[x, y] = min(self.pheromones[x, y] +  current_pheromone_deposit , max_pheromone)
         else:
             adj_cells = self.get_adjacent_cells()
             # choose the next cell based on pheromones
