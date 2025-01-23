@@ -9,68 +9,79 @@ import time
 
 # Set the parameters for the simulation
 # Make sure to define the simulation parameters here or in run_process, as run_process won't have access to them otherwise
-# amw.ntimeSteps = 2500
-# amw.maze_dimention = 31
-# amw.maze_scale = 2
+amw.ntimeSteps = 2500
+amw.maze_dimention = 21
+amw.maze_scale = 2
+amw.ants_with_food_returned = 50
 
 def run():
     start_time = time.time()
 
-    #List with times for each dfficulty
-    results = []
+    #List with times for each pheromone deposit rate 
+    deposit_rates = [0, 0.1, 0.5, 0.7, 0.9]
+    all_results = []
 
     #Number of iterations
     iteration = 10
 
     # 32 bit max value
     MAX_INT = 32**2 - 1
+    for deposit_rate in deposit_rates:
+        print(f'Starting simulation with pheromone deposit rate: {deposit_rate}')
+        amw.pheromone_deposit = deposit_rate
+        results = []
+        # Different maze diffuctlies
+        for nPaths in [16, 32, 55, 120]:
+            print(f'Starting simulation with {nPaths} paths')
+            # Shared array to store the times for each iteration
+            shared_times = mp.Array('i', [-1] * iteration)
+            # List to store the processes
+            processes = []
+            for i in range(iteration):
+                # Create a new process for each iteration
+                p = mp.Process(target=run_process, args=(MAX_INT, nPaths, shared_times, i))
+                processes.append(p)
+                p.start()
 
-    # Different maze diffuctlies
-    for nPaths in [16, 32, 55, 120]:
-        print(f'Starting simulation with {nPaths} paths')
-        # Shared array to store the times for each iteration
-        shared_times = mp.Array('i', [-1] * iteration)
-        # List to store the processes
-        processes = []
-        for i in range(iteration):
-            # Create a new process for each iteration
-            p = mp.Process(target=run_process, args=(MAX_INT, nPaths, shared_times, i))
-            processes.append(p)
-            p.start()
+            # Wait for all processes to finish
+            for p in processes:
+                p.join()
 
-        # Wait for all processes to finish
-        for p in processes:
-            p.join()
+            # Count the number of simulations that ran out of time
+            failed_count = 0
+            for t in enumerate(shared_times):
+                if t[1] == -1:
+                    failed_count += 1
+                    shared_times[t[0]] = amw.ntimeSteps
 
-        # Count the number of simulations that ran out of time
-        failed_count = 0
-        for t in enumerate(shared_times):
-            if t[1] == -1:
-                failed_count += 1
-                shared_times[t[0]] = amw.ntimeSteps
+            print(f'Timed out simulations: {failed_count}')
 
-        print(f'Timed out simulations: {failed_count}')
-
-        avg_time = sum(shared_times) / len(shared_times)
-        results.append((nPaths, avg_time))
+            avg_time = sum(shared_times) / len(shared_times)
+            results.append((nPaths, avg_time))
+    
+        all_results.append((deposit_rate, results))
 
         #vis.persist()  # Keep the visualization open after the simulation
 
     # Plotting the results after all simulations
-    if results:
-        print(results)
-        # print the time it took to run the simulation
-        print(f"--- {time.time() - start_time} seconds ---")
-        # Extract x (number of paths) and y (time to find food) values
-        x_values, y_values = zip(*results)
+    plt.figure()
+    for deposit_rate, results in all_results:
+        if results:
+            print(f"Time for deposit rate {deposit_rate}: {results}")
+            # print the time it took to run the simulation
+            print(f"--- {time.time() - start_time} seconds ---")
+            # Extract x (number of paths) and y (time to find food) values
+            x_values, y_values = zip(*results)
+            
+            #Plot results for this deposit rate 
+            plt.plot(x_values, y_values, marker='o', linestyle='-', label = f"{deposit_rate}")
 
         # Plot the graph
-        plt.figure()
-        plt.plot(x_values, y_values, marker='o', linestyle='-', color='b')
-        plt.xlabel('Number of paths')
-        plt.ylabel('Foraging time')
-        plt.title('Effect of maze difficulty on foraging time')
-        plt.show()
+    plt.xlabel('Number of paths')
+    plt.ylabel('Foraging time')
+    plt.title('Effect of maze difficulty on foraging time')
+    plt.legend(title = 'Pheromone deposit rates')
+    plt.show()
 
 def run_process(MAX_INT, nPaths, times, i):
     new_seed = random.randint(0, MAX_INT)
