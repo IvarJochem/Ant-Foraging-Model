@@ -99,6 +99,8 @@ def plot_average_food_found_multiple_folders(main_folder, sub_folders, path_wher
                 markersize=1)
     
     plt.xlabel("Timestep")
+#    plt.xlim(1500, 2000)
+#    plt.ylim(80, 150)
     plt.ylabel("Food Found")
     plt.title("Average Food Found Over Time")
     plt.grid(True)
@@ -107,6 +109,86 @@ def plot_average_food_found_multiple_folders(main_folder, sub_folders, path_wher
     plt.savefig(full_path)
     plt.close()
 
+
+def plot_average_food_found_3_graphs(main_folder, sub_folders, path_where_to_save_graph, graph_name):
+    """
+    Load multiple files from multiple folders, calculate the average Food Found for each timestep
+    per folder, and plot 3 results in side-by-side subplots.
+    """
+
+    column_names = ["Timestep", "Food Found", "AntsFood"]
+
+    # Create a figure with 3 subplots side by side
+    fig, axs = plt.subplots(1, 4, figsize=(15, 5))
+    
+    colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray', 'yellow', 'black']
+    
+    for folder_idx, folder_path in enumerate(sub_folders):
+        all_data = []
+        
+        # Get all files from current folder
+        sub_folder_path = os.path.join(main_folder, folder_path)
+
+        for sub_sub_folder_name in os.listdir(sub_folder_path):
+            sub_sub_folder_path = os.path.join(sub_folder_path, sub_sub_folder_name)
+        
+            for file_name in os.listdir(sub_sub_folder_path):
+                file_path = os.path.join(sub_sub_folder_path, file_name)
+
+
+                
+                if os.path.isfile(file_path) and file_name.endswith('.txt'):
+                    skiprows = find_header_index(file_path=file_path)
+                    data = pd.read_csv(file_path, skiprows=skiprows, names=column_names)
+                    all_data.append(data)
+            
+            if not all_data:
+                print(f"No valid files found in folder: {folder_path}")
+                continue
+        
+        
+
+            # Combine all data from this folder
+            combined_data = pd.concat(all_data, axis=0)
+            
+            # Calculate average for this folder
+            average_data = combined_data.groupby("Timestep").mean().reset_index()
+            
+            # Folder name for legend
+            folder_name = os.path.basename(sub_sub_folder_name).replace('_', ' ')
+            folder_name = 'Pheromone ' + folder_name 
+            parts = folder_name.split("decay")
+            label = "Decay " + parts[1].strip()
+            
+            # Plot with different color for each folder in respective subplot
+            color = colors[folder_idx % len(colors)]  
+            axs[folder_idx].plot(average_data["Timestep"], 
+                                average_data["Food Found"], 
+                                label=f"{label}",
+                                #color=color,
+                                marker='o',
+                                markersize=1)
+            
+            # Set subplot details
+            axs[folder_idx].set_xlabel("Timestep")
+#            axs[folder_idx].set_xlim(1500, 2000)
+#            axs[folder_idx].set_ylim(80, 150)
+            axs[folder_idx].set_ylabel("Food Found")
+
+            title = os.path.basename(folder_path).replace('_', ' ')
+            title = 'Pheromone ' + title
+
+            axs[folder_idx].set_title(f"{title}")
+            axs[folder_idx].grid(True)
+            axs[folder_idx].legend()
+    
+    
+    plt.tight_layout()
+    full_path = os.path.join(path_where_to_save_graph, graph_name)
+    plt.savefig(full_path)
+    plt.close()
+
+
 # Main execution
 def main():
 
@@ -114,7 +196,7 @@ def main():
     folder_path = "sim_results/deposit0.0" 
     path_where_to_save_graph = "graphs" 
     graph_name='test1'
-    plot_average_food_found_one_folder(folder_path, path_where_to_save_graph, graph_name)
+#    plot_average_food_found_one_folder(folder_path, path_where_to_save_graph, graph_name)
 
 
 
@@ -133,8 +215,14 @@ def main():
     for file_name in os.listdir(main_folder):
         file_path = os.path.join(file_name)
         sub_folders.append(file_path)  
+    
+#    print(sub_folders)
+#    sub_folders = ['deposit_0.01_decay_0.0', 'deposit_0.01_decay_0.01', 'deposit_0.01_decay_0.02', 'deposit_0.01_decay_0.05', 'deposit_0.01_decay_0.1', 'deposit_0.01_decay_0.2', 'deposit_0.01_decay_0.5', 'deposit_0.01_decay_0.9']
+#    plot_average_food_found_multiple_folders(main_folder, sub_folders, path_where_to_save_graph, graph_name)
 
-    plot_average_food_found_multiple_folders(main_folder, sub_folders, path_where_to_save_graph, graph_name)
+    graph_name = 'test3'
+    sub_folders = ['deposit_0.01', 'deposit_0.04', 'deposit_0.1', 'deposit_0.4']
+    plot_average_food_found_3_graphs(main_folder, sub_folders, path_where_to_save_graph, graph_name)
 
 
 if __name__ == "__main__":
