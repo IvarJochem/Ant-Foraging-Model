@@ -14,32 +14,37 @@ amw.maze_dimention = 21
 amw.maze_scale = 2
 amw.ants_with_food_returned = 50
 
+# List with times for each pheromone deposit rate
+deposit_rates = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
+all_results = []
+
+# Number of paths to test
+nPaths_list = [16, 32, 55, 120]
+
+# Number of iterations
+iteration = 12
+
+# Maze seeds
+MAX_INT = 32**2 - 1
+nMazes = 10
+maze_seeds = [random.randint(0, MAX_INT) for i in range(nMazes)]
+
 def run():
     start_time = time.time()
-
-    #List with times for each pheromone deposit rate 
-    deposit_rates = [0, 0.1, 0.5, 0.7, 0.9]
-    all_results = []
-
-    #Number of iterations
-    iteration = 10
-
-    # 32 bit max value
-    MAX_INT = 32**2 - 1
-    for deposit_rate in deposit_rates:
+    for d_i, deposit_rate in enumerate(deposit_rates):
         print(f'Starting simulation with pheromone deposit rate: {deposit_rate}')
+        print(f"{int(1/len(deposit_rates)*d_i*100)}% --- {time.time() - start_time} seconds ---")
         amw.pheromone_deposit = deposit_rate
         results = []
-        # Different maze diffuctlies
-        for nPaths in [16, 32, 55, 120]:
-            print(f'Starting simulation with {nPaths} paths')
+        # Different maze difficulties
+        for nPaths in nPaths_list:
             # Shared array to store the times for each iteration
-            shared_times = mp.Array('i', [-1] * iteration)
+            shared_times = mp.Array('i', [-1] * iteration*nMazes)
             # List to store the processes
             processes = []
-            for i in range(iteration):
+            for i in range(iteration*nMazes):
                 # Create a new process for each iteration
-                p = mp.Process(target=run_process, args=(MAX_INT, nPaths, shared_times, i))
+                p = mp.Process(target=run_process, args=(nPaths, shared_times, i, i//iteration))
                 processes.append(p)
                 p.start()
 
@@ -54,7 +59,7 @@ def run():
                     failed_count += 1
                     shared_times[t[0]] = amw.ntimeSteps
 
-            print(f'Timed out simulations: {failed_count}')
+            # print(f'Timed out simulations: {failed_count}')
 
             avg_time = sum(shared_times) / len(shared_times)
             results.append((nPaths, avg_time))
@@ -68,29 +73,29 @@ def run():
     for deposit_rate, results in all_results:
         if results:
             print(f"Time for deposit rate {deposit_rate}: {results}")
-            # print the time it took to run the simulation
-            print(f"--- {time.time() - start_time} seconds ---")
             # Extract x (number of paths) and y (time to find food) values
             x_values, y_values = zip(*results)
             
             #Plot results for this deposit rate 
             plt.plot(x_values, y_values, marker='o', linestyle='-', label = f"{deposit_rate}")
 
-        # Plot the graph
+    # print the time it took to run the simulation
+    print(f"100% --- {time.time() - start_time} seconds ---")
+    # Plot the graph
     plt.xlabel('Number of paths')
     plt.ylabel('Foraging time')
     plt.title('Effect of maze difficulty on foraging time')
     plt.legend(title = 'Pheromone deposit rates')
     plt.show()
 
-def run_process(MAX_INT, nPaths, times, i):
-    new_seed = random.randint(0, MAX_INT)
+def run_process(nPaths, times, i, j):
+    new_seed = maze_seeds[j]
     maze = generate_maze_with_paths(amw.maze_dimention, amw.maze_dimention, nPaths, randomseed=new_seed)
     maze = upscale_maze(maze, amw.maze_scale)
     # from ant_model_walkback import Model
     sim = Model(maze, len(maze[0]), len(maze))
 
-    #Time of current iteration
+    # Time of current iteration
     t = 0
 
     # Run the simulation for the current value of nPaths
