@@ -13,6 +13,7 @@ amw.ntimeSteps = 2500
 amw.maze_dimention = 21
 amw.maze_scale = 2
 amw.ants_with_food_returned = 50
+amw.nWaveAnts = 1
 
 # List with times for each pheromone deposit rate
 deposit_rates = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
