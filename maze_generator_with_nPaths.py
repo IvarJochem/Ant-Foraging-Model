@@ -26,7 +26,8 @@ def carve_passages_from(cx, cy, maze, rows, cols, path_count, current_paths):
         for direction in directions:
             nx, ny = cx + direction[0] * 2, cy + direction[1] * 2
             if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] == 0:
-                # Randomly add a connection to create more paths (probability can be changed / seed can be set)
+                # Randomly add a connection to create more paths 
+                # (probability can be changed / seed can be set)
                 if random.random() < 0.5:
                     maze[cx + direction[0]][cy + direction[1]] = 0
                     current_paths[0] += 1

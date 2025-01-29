@@ -6,10 +6,10 @@ from maze_generator_with_nPaths import generate_maze_with_paths, upscale_maze
 # Number of paths change this to 120, 55, 32, or 16
 nPaths = 32
 
-# Number of time steps in the simulation 
+# Number of time steps in the simulation
 ntimeSteps = 2500
 
-# Maze dimention, must be odd number 
+# Maze dimention, must be odd number
 maze_dimention = 21
 
 # Maze scale (the width of the paths)
@@ -33,14 +33,14 @@ nWaveAnts = 1
 # Time step between waves
 WaveTimesteps = 1
 
-# Number of ants that have to return with food 
+# Number of ants that have to return with food
 ants_with_food_returned = 1000
 
 # Maximum amount of pheromone deposited per timestep per ant
 pheromone_deposit = 0.3
 
-#Strength of decay 
-decay_strength = 1 
+#Strength of decay
+decay_strength = 1
 
 # Base chance of choosing a cell
 base_chance = 0.7
@@ -103,7 +103,7 @@ class Model:
 
     def update(self, timestep):
         """
-        Update the positions of all ants and stop if food is found.
+        Update the positions of all ants and pheromones in the grid.
         """
         if timestep % self.WaveTimesteps == 0:
             self.spawn_ants()
@@ -153,9 +153,9 @@ class Ant:
         """
         Choose one of adjecent cells based on pheromone level
         """
-        # remove cells that are walls
+        # Remove cells that are walls
         adj_cells = [cell for cell in adj_cells if self.grid[cell[0], cell[1]] != wall]
-        # remove cells that are visited
+        # Remove cells that are visited
         adj_cells = [cell for cell in adj_cells if str(cell) not in self.visited.keys()]
 
         if len(adj_cells) == 0:
@@ -166,13 +166,13 @@ class Ant:
             total_chance += self.pheromones[cell[0], cell[1]] + base_chance
 
         if total_chance == len(adj_cells)*base_chance:
-            # nothing happens, no pheromones
+            # Nothing happens, no pheromones
             np.random.shuffle(adj_cells)
             return adj_cells[0]
-        # pick a random number between 0 and the total pheromones
+        # Pick a random number between 0 and the total pheromones
         pheromone_pick  = np.random.uniform(0, total_chance)
         current_chance = 0
-        # pick the cell based on pheromone_pick
+        # Pick the cell based on pheromone_pick
         for cell in adj_cells:
             current_chance += self.pheromones[cell[0], cell[1]] + base_chance
             if current_chance >= pheromone_pick:
@@ -185,7 +185,7 @@ class Ant:
         self.time_since_last_update += dt
         x, y = self.position
         current_cell_value = self.grid[x, y]
-        # check if the ant found food
+        # Check if the ant found food
         if current_cell_value == food:
             self.hasfood = True
 
@@ -200,11 +200,12 @@ class Ant:
             elif current_cell_value == food:
                 self.final_path_length = len(self.path)
             elif current_cell_value >= 0 and current_cell_value < 1:
+                # Calculate the pheromone deposit based on the path length
                 current_pheromone_deposit = pheromone_deposit*(((len(self.path)/self.final_path_length) / decay_strength)**2)
                 self.pheromones[x, y] = min(self.pheromones[x, y] +  current_pheromone_deposit , max_pheromone)
         else:
             adj_cells = self.get_adjacent_cells()
-            # choose the next cell based on pheromones
+            # Choose the next cell based on pheromones
             cell = self.choose_cells_based_on_pheromones(adj_cells)
             if cell != False:
                 self.position = cell
@@ -212,7 +213,7 @@ class Ant:
                 self.path.append(self.position)
                 self.time_since_last_update = 0.0
                 return
-        # move back to the colony along the path
+        # Move back to the colony along the path
         self.path.pop()
         if len(self.path) > 0:
             self.position = self.path[-1]
@@ -287,7 +288,6 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
-    import time
     timeSteps = ntimeSteps
     t = 0
     maze = generate_maze_with_paths(maze_dimention, maze_dimention, nPaths)
