@@ -11,14 +11,14 @@ from scipy.stats import f_oneway
 # Set the parameters for the simulation
 # Make sure to define the simulation parameters here or in run_process, as run_process won't have access to them otherwise
 amw.ntimeSteps = 2500
-amw.maze_dimention = 21
-amw.maze_scale = 2
-amw.ants_with_food_returned = 50
+amw.maze_dimention = 31
+amw.maze_scale = 1
+amw.ants_with_food_returned = 500
 amw.nWaveAnts = 1
-amw.decay_rate = 0.5
+amw.decay_rate = 0.2
 
 # List with times for each pheromone deposit rate
-deposit_rates = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
+deposit_rates = [0, 0.5]
 all_results = []
 
 # Number of paths to test
@@ -137,6 +137,3 @@ if __name__ == '__main__':
     Simulation parameters
     """
     run()
-
-
-
