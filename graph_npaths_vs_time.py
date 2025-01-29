@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np 
 import matplotlib.pyplot as plt
 from maze_generator_with_nPaths import generate_maze_with_paths, upscale_maze
 import ant_model_walkback as amw
@@ -6,6 +6,7 @@ from ant_model_walkback import Model, Ant
 import random
 import multiprocessing as mp
 import time
+from scipy.stats import f_oneway
 
 # Set the parameters for the simulation
 # Make sure to define the simulation parameters here or in run_process, as run_process won't have access to them otherwise
@@ -14,6 +15,7 @@ amw.maze_dimention = 21
 amw.maze_scale = 2
 amw.ants_with_food_returned = 50
 amw.nWaveAnts = 1
+amw.decay_rate = 0.5
 
 # List with times for each pheromone deposit rate
 deposit_rates = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
@@ -23,7 +25,7 @@ all_results = []
 nPaths_list = [16, 32, 55, 120]
 
 # Number of iterations
-iteration = 12
+iteration = 7
 
 # Maze seeds
 MAX_INT = 32**2 - 1
@@ -32,11 +34,21 @@ maze_seeds = [random.randint(0, MAX_INT) for i in range(nMazes)]
 
 def run():
     start_time = time.time()
+
+    #Collect results for boxplots 
+    boxplot_data = {0: {nPaths: [] for nPaths in nPaths_list}, 0.5: {nPaths: [] for nPaths in nPaths_list}}
+    
+    #Colors for boxplots 
+    deposit_colors = {0: "lightpink", 0.5: "lightgreen"}
+    
     for d_i, deposit_rate in enumerate(deposit_rates):
+        #Only plot deposit rates 0 and 0.5
+        if deposit_rate not in [0, 0.5]: 
+            continue
         print(f'Starting simulation with pheromone deposit rate: {deposit_rate}')
         print(f"{int(1/len(deposit_rates)*d_i*100)}% --- {time.time() - start_time} seconds ---")
         amw.pheromone_deposit = deposit_rate
-        results = []
+       
         # Different maze difficulties
         for nPaths in nPaths_list:
             # Shared array to store the times for each iteration
@@ -62,31 +74,38 @@ def run():
 
             # print(f'Timed out simulations: {failed_count}')
 
-            avg_time = sum(shared_times) / len(shared_times)
-            results.append((nPaths, avg_time))
+            #Add times for current difficulty and deposit rate to boxplot
+            boxplot_data[deposit_rate][nPaths].extend(shared_times)
+        
+    #ANOVA test for statistical analysis 
+    for deposit_rate in [0, 0.5]:
+        data_groups = [boxplot_data[deposit_rate][nPaths] for nPaths in nPaths_list]
+        stat, p_value = f_oneway(*data_groups)
+        print(f"ANOVA for deposit rate {deposit_rate}: F={stat:.3f}, p={p_value:.3g}")
     
-        all_results.append((deposit_rate, results))
 
         #vis.persist()  # Keep the visualization open after the simulation
 
     # Plotting the results after all simulations
     plt.figure()
-    for deposit_rate, results in all_results:
-        if results:
-            print(f"Time for deposit rate {deposit_rate}: {results}")
-            # Extract x (number of paths) and y (time to find food) values
-            x_values, y_values = zip(*results)
-            
-            #Plot results for this deposit rate 
-            plt.plot(x_values, y_values, marker='o', linestyle='-', label = f"{deposit_rate}")
+    for d_i, (deposit_rate, color) in enumerate(deposit_colors.items()):
+        data = [boxplot_data[deposit_rate][nPaths] for nPaths in nPaths_list]
+        positions = [x + (d_i * 0.3) for x in range(len(nPaths_list))]  # Offset for each deposit rate
+        plt.boxplot(data, positions=positions, widths=0.25, patch_artist=True,
+                    boxprops=dict(facecolor=color),
+                    medianprops=dict(color='black'), 
+                    labels=[str(n) for n in nPaths_list] if d_i == 0 else None)
 
     # print the time it took to run the simulation
     print(f"100% --- {time.time() - start_time} seconds ---")
     # Plot the graph
+    plt.xticks(ticks=range(len(nPaths_list)), labels=nPaths_list)
     plt.xlabel('Number of paths')
     plt.ylabel('Foraging time')
     plt.title('Effect of maze difficulty on foraging time')
-    plt.legend(title = 'Pheromone deposit rates')
+    legend_labels = [f"Pheromone deposit = {rate}" for rate in deposit_colors.keys()]
+    legend_colors = [plt.Line2D([0], [0], color=color, lw=4) for color in deposit_colors.values()]
+    plt.legend(legend_colors, legend_labels, title='Deposit rates')
     plt.show()
 
 def run_process(nPaths, times, i, j):
@@ -111,10 +130,13 @@ def run_process(nPaths, times, i, j):
         t += 1
 
 
+
+
 if __name__ == '__main__':
     """
     Simulation parameters
     """
     run()
+
 
 
