@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 from maze_generator_with_nPaths import generate_maze_with_paths, upscale_maze
 
 # Number of paths change this to 120, 55, 32, or 16
-nPaths = 16
+nPaths = 32
 
 # Number of time steps in the simulation 
-ntimeSteps = 1000
+ntimeSteps = 2500
 
 # Maze dimention, must be odd number 
-maze_dimention = 13
+maze_dimention = 21
 
 # Maze scale (the width of the paths)
-maze_scale = 3
+maze_scale = 2
 
 # Maze size
 maze_size = maze_dimention*maze_scale
@@ -25,19 +25,19 @@ colony_position = (maze_scale, maze_scale)
 food_position = (maze_size-maze_scale-1, maze_size-maze_scale-1)
 
 # Number of ants
-nAnts = 100
+nAnts = 250
 
 # Number of ants per wave
-nWaveAnts = 5
+nWaveAnts = 1
 
 # Time step between waves
-WaveTimesteps = 10
+WaveTimesteps = 1
 
 # Number of ants that have to return with food 
-ants_with_food_returned = 50
+ants_with_food_returned = 1000
 
 # Maximum amount of pheromone deposited per timestep per ant
-pheromone_deposit = 0.1
+pheromone_deposit = 0.3
 
 #Strength of decay 
 decay_strength = 1 
@@ -46,7 +46,7 @@ decay_strength = 1
 base_chance = 0.7
 
 # Decay rate of pheromones
-decay_rate = 0.01
+decay_rate = 0.02
 
 # Maximum amount of pheromones per cell
 max_pheromone = 0.99
@@ -219,11 +219,10 @@ class Ant:
         self.time_since_last_update = 0.0
         return
 
-
 class Visualization:
     def __init__(self, maze, pheromones, height, width, pauseTime=0.01):
         """
-        This simple visualization shows the colony, food, and ants.
+        This visualization uses separate scatter plots for ants to preserve colony and food colors.
         """
         self.h = height
         self.w = width
@@ -232,61 +231,55 @@ class Visualization:
         self.pheromones = pheromones
         from matplotlib.colors import ListedColormap
         colors = [
-            "purple", # -3 ants with food
-            "red", # -2 ants no food
-            "yellow", #-1 colony
-            "white", # 0 open spaces
-            "green", # 1 food
-            "black", # 2 walls
-
+            "yellow",  # -1 colony
+            "white",   # 0 open spaces
+            "green",   # 1 food
+            "black",   # 2 walls
         ]
+        # Adjusted color indices to match the grid values
         custom_cmap = ListedColormap(colors)
+        self.im = plt.imshow(self.grid, vmin=-1, vmax=2, cmap=custom_cmap)
 
-        self.im = plt.imshow(self.grid, vmin=-3, vmax=3, cmap=custom_cmap)
+        # Initialize scatter plots for ants
+        self.ants_without_food_scatter = plt.scatter([], [], color='red', marker='o', s=25, zorder=3)
+        self.ants_with_food_scatter = plt.scatter([], [], color='purple', marker='o', s=25, zorder=3)
 
         self.ph_im = None
         plt.title('Ant Simulation')
 
     def update(self, t, ant_without_food_positions, ant_with_food_positions):
         """
-        Updates the grid with colony, food, and ants for visualization.
+        Updates the visualization with pheromones and ant positions using scatter plots.
         """
-        self.grid = maze.copy()
-
-        # Visualize the pheromones
+        # Update pheromones overlay
         if self.ph_im is None:
             self.ph_im = plt.imshow(self.pheromones, alpha=0.5, cmap='hot', vmin=0, vmax=max_pheromone)
         else:
             self.ph_im.set_data(self.pheromones)
-        # # Visualize the colony with a 3x3 radius in yellow (-1)
-        # for dx in [-1, 0, 1]:
-        #     for dy in [-1, 0, 1]:
-        #         x = (colony_position[0] + dx) % self.h
-        #         y = (colony_position[1] + dy) % self.w
-        #         grid[x, y] = -1
 
-        # # Visualize the food (2)
-        # grid[food_position[0], food_position[1]] = 2
+        # Update ant positions
+        # Convert positions to (x, y) coordinates for scatter plot (inverting rows and columns)
+        if ant_without_food_positions:
+            x_no_food = [y + 0.5 for x, y in ant_without_food_positions]
+            y_no_food = [x + 0.5 for x, y in ant_without_food_positions]
+            self.ants_without_food_scatter.set_offsets(np.column_stack((x_no_food, y_no_food)))
+        else:
+            # Use empty 2D array when no positions
+            self.ants_without_food_scatter.set_offsets(np.empty((0, 2)))
 
-        # Visualize the ants (-2)
-        for x, y in ant_without_food_positions:
-            self.grid[x, y] = -2
+        if ant_with_food_positions:
+            x_with_food = [y + 0.5 for x, y in ant_with_food_positions]
+            y_with_food = [x + 0.5 for x, y in ant_with_food_positions]
+            self.ants_with_food_scatter.set_offsets(np.column_stack((x_with_food, y_with_food)))
+        else:
+            # Use empty 2D array when no positions
+            self.ants_with_food_scatter.set_offsets(np.empty((0, 2)))
 
-        # Visualize the ants with food (-3)
-        for x, y in ant_with_food_positions:
-            self.grid[x, y] = -3
-
-        self.im.set_data(self.grid)
-
-        plt.draw()
         plt.title('t = %i' % t)
+        plt.draw()
         plt.pause(self.pauseTime)
 
     def persist(self):
-        """
-        Use this method if you want to have the visualization persist after the
-        calling the update method for the last time.
-        """
         plt.show()
 
 
@@ -294,6 +287,7 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
+    import time
     timeSteps = ntimeSteps
     t = 0
     maze = generate_maze_with_paths(maze_dimention, maze_dimention, nPaths)
