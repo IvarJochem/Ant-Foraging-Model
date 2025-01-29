@@ -1,6 +1,6 @@
 # DS_Store files
 .DS_Store
-
+graphs/
 sim_results/
 
 # Byte-compiled / optimized / DLL files
