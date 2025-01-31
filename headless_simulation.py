@@ -8,14 +8,13 @@ import multiprocessing as mp
 # Make sure to define the simulation parameters here or in run_process,
 # as run_process won't have access to them otherwise
 amw.nPaths = 16
-amw.maze_dimention = 21
-amw.maze_scale = 2
+amw.maze_dimention = 31
+amw.maze_scale = 1
 amw.nAnts = 100
 amw.nWaveAnts = 1
 amw.WaveTimesteps = 1
 amw.colony_position = (amw.maze_scale, amw.maze_scale)
-amw.food_position = (amw.maze_size-amw.maze_scale-1, amw.maze_size-amw.maze_scale-1)
-amw.ants_with_food_returned = 25
+amw.food_position = ((amw.maze_dimention*amw.maze_scale)-amw.maze_scale-1, (amw.maze_dimention*amw.maze_scale)-amw.maze_scale-1)
 amw.max_pheromone = 0.99
 amw.ants_with_food_returned = 2000
 
@@ -82,6 +81,6 @@ if __name__ == '__main__':
     """
     Simulation parameters
     """
-    for i in range(10):
-        deposit_rate = i/10
-        run(subfolder_name='deposit'+str(deposit_rate), deposit=deposit_rate, decay=0.05)
+    for i in range(5):
+        deposit_rate = i/5
+        run(subfolder_name='deposit'+str(deposit_rate), deposit=deposit_rate, decay=0.2)
