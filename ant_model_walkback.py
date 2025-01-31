@@ -13,7 +13,7 @@ ntimeSteps = 2500
 maze_dimention = 21
 
 # Maze scale (the width of the paths)
-maze_scale = 2
+maze_scale = 1
 
 # Maze size
 maze_size = maze_dimention*maze_scale
@@ -37,7 +37,7 @@ WaveTimesteps = 1
 ants_with_food_returned = 1000
 
 # Maximum amount of pheromone deposited per timestep per ant
-pheromone_deposit = 0.3
+pheromone_deposit = 0.4
 
 #Strength of decay
 decay_strength = 1
@@ -46,7 +46,7 @@ decay_strength = 1
 base_chance = 0.7
 
 # Decay rate of pheromones
-decay_rate = 0.02
+decay_rate = 0.15
 
 # Maximum amount of pheromones per cell
 max_pheromone = 0.99
@@ -261,16 +261,16 @@ class Visualization:
         # Update ant positions
         # Convert positions to (x, y) coordinates for scatter plot (inverting rows and columns)
         if ant_without_food_positions:
-            x_no_food = [y + 0.5 for x, y in ant_without_food_positions]
-            y_no_food = [x + 0.5 for x, y in ant_without_food_positions]
+            x_no_food = [y for x, y in ant_without_food_positions]
+            y_no_food = [x for x, y in ant_without_food_positions]
             self.ants_without_food_scatter.set_offsets(np.column_stack((x_no_food, y_no_food)))
         else:
             # Use empty 2D array when no positions
             self.ants_without_food_scatter.set_offsets(np.empty((0, 2)))
 
         if ant_with_food_positions:
-            x_with_food = [y + 0.5 for x, y in ant_with_food_positions]
-            y_with_food = [x + 0.5 for x, y in ant_with_food_positions]
+            x_with_food = [y for x, y in ant_with_food_positions]
+            y_with_food = [x for x, y in ant_with_food_positions]
             self.ants_with_food_scatter.set_offsets(np.column_stack((x_with_food, y_with_food)))
         else:
             # Use empty 2D array when no positions
